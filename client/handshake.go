@@ -68,7 +68,7 @@ func (gm *GlideinManagerClient) DoHandshake() (string, error) {
 func (gm *GlideinManagerClient) initiateHandshake() (ChallengeInitiateResponse, error) {
 	initiateReq := ChallengeInitiateRequest{
 		ClientName:      gm.HostName,
-		CallbackAddress: fmt.Sprintf("%v:%v/challenge/response", gm.HostName, gm.Port),
+		CallbackAddress: fmt.Sprintf("http://%v:%v/challenge/response", gm.HostName, gm.Port),
 	}
 	initiateResp := ChallengeInitiateResponse{}
 
