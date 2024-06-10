@@ -20,7 +20,7 @@ func (gm *GlideinManagerClient) RepoStatus() (RepoListing, error) {
 	}
 	defer resp.Body.Close()
 
-	return listing, UnmarshalResponse(resp, &listing)
+	return listing, UnmarshalBody(resp.Body, &listing)
 }
 
 func (gm *GlideinManagerClient) ClientStatus() ([]ClientStatus, error) {
@@ -31,5 +31,5 @@ func (gm *GlideinManagerClient) ClientStatus() ([]ClientStatus, error) {
 	}
 	defer resp.Body.Close()
 
-	return statuses, UnmarshalResponse(resp, &statuses)
+	return statuses, UnmarshalBody(resp.Body, &statuses)
 }

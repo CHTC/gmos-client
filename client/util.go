@@ -3,11 +3,10 @@ package client
 import (
 	"encoding/json"
 	"io"
-	"net/http"
 )
 
-func UnmarshalResponse[T any](resp *http.Response, s *T) error {
-	body, err1 := io.ReadAll(resp.Body)
+func UnmarshalBody[T any](bodyIo io.ReadCloser, s *T) error {
+	body, err1 := io.ReadAll(bodyIo)
 	if err1 != nil {
 		return err1
 	}
