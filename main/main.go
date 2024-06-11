@@ -10,6 +10,7 @@ func main() {
 	cl := client.GlideinManagerClient{
 		ManagerUrl: "http://gm-file-server:80",
 		HostName:   "test-client",
+		WorkDir:    ".",
 	}
 	status, err := cl.ClientStatus()
 	if err != nil {
@@ -21,4 +22,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", cl.Credentials)
+
+	if err := cl.CloneRepo(); err != nil {
+		panic(err)
+	}
 }

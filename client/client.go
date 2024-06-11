@@ -9,32 +9,27 @@ type GlideinManagerCredentials struct {
 	Expires    string
 }
 type GlideinManagerClient struct {
+	// The unique name of the client within its namespace
+	// The Glidein manager must be separately configured to
+	// Allow-list each client by name
 	HostName string
-	Port     int32
 
-	// The URL of
+	// The hostname of the Glidein Manager to connect to
 	ManagerUrl string
 
+	// The active authentication token for the client
 	// TODO we might not want to store this in memory
 	Credentials string
-}
 
-func (gm *GlideinManagerClient) RepoStatus() (RepoListing, error) {
-	var listing RepoListing
-	resp, err1 := http.Get(gm.RouteFor("/api/public/repo-status"))
-	if err1 != nil {
-		return RepoListing{}, err1
-	}
-	defer resp.Body.Close()
-
-	return listing, UnmarshalBody(resp.Body, &listing)
+	// The base directory into which to clone repositories
+	WorkDir string
 }
 
 func (gm *GlideinManagerClient) ClientStatus() ([]ClientStatus, error) {
 	var statuses []ClientStatus
-	resp, err1 := http.Get(gm.RouteFor("/api/public/client-status"))
-	if err1 != nil {
-		return []ClientStatus{}, err1
+	resp, err := http.Get(gm.RouteFor("/api/public/client-status"))
+	if err != nil {
+		return []ClientStatus{}, err
 	}
 	defer resp.Body.Close()
 

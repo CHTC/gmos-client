@@ -67,9 +67,9 @@ func (gm *GlideinManagerClient) initiateHandshake(listenerPort int) (ChallengeIn
 	}
 	initiateResp := ChallengeInitiateResponse{}
 
-	body, err1 := json.Marshal(initiateReq)
+	body, err := json.Marshal(initiateReq)
 	respBody, err2 := http.Post(gm.RouteFor("/api/public/challenge/initiate"), "application/json", bytes.NewBuffer(body))
-	if err := errors.Join(err1, err2); err != nil {
+	if err := errors.Join(err, err2); err != nil {
 		return initiateResp, err
 	}
 

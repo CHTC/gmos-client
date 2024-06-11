@@ -20,7 +20,7 @@ type ChallengeCompleteResponse struct {
 	ChallengeSecret string `json:"challenge_secret"`
 }
 
-type RepoListing struct {
+type RepoState struct {
 	Name       string `json:"name"`
 	Upstream   string `json:"upstream"`
 	CommitHash string `json:"commit_hash"`
