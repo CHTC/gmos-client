@@ -114,7 +114,7 @@ type HandshakeCallbackHandler struct {
 // helper function to write an error message to both the http response writer and
 // capability output channel
 func (hs *HandshakeCallbackHandler) callbackError(w http.ResponseWriter, err error, status int) {
-	http.Error(w, err.Error(), http.StatusBadRequest)
+	http.Error(w, err.Error(), status)
 	hs.capabilityChannel <- CapabilityResult{capability: "", err: err}
 }
 
