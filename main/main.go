@@ -10,7 +10,6 @@ func main() {
 	cl := client.GlideinManagerClient{
 		ManagerUrl: "http://gm-file-server:80",
 		HostName:   "test-client",
-		Port:       8080,
 	}
 	status, err := cl.ClientStatus()
 	if err != nil {
@@ -18,9 +17,8 @@ func main() {
 	}
 	fmt.Printf("%+v\n", status)
 
-	capability, err := cl.DoHandshake()
-	if err != nil {
+	if err := cl.DoHandshake(8080); err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", capability)
+	fmt.Printf("%+v\n", cl.Credentials)
 }
