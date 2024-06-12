@@ -12,18 +12,14 @@ func main() {
 		HostName:   "test-client",
 		WorkDir:    ".",
 	}
-	status, err := cl.ClientStatus()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%+v\n", status)
-
 	if err := cl.DoHandshake(8080); err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", cl.Credentials)
 
-	if err := cl.CloneRepo(); err != nil {
-		panic(err)
+	for i := 0; i < 2; i++ {
+		if err := cl.SyncRepo(); err != nil {
+			panic(err)
+		}
 	}
 }
