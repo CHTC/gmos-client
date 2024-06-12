@@ -55,7 +55,7 @@ func (gm *GlideinManagerClient) DoHandshake(listenerPort int) error {
 	}
 
 	// 4. Store the credentials for subsequent authenticated requests
-	gm.Credentials = capability
+	gm.Credentials = GlideinManagerCredentials{Capability: capability}
 	return nil
 }
 
@@ -68,8 +68,11 @@ func (gm *GlideinManagerClient) initiateHandshake(listenerPort int) (ChallengeIn
 	initiateResp := ChallengeInitiateResponse{}
 
 	body, err := json.Marshal(initiateReq)
-	respBody, err2 := http.Post(gm.RouteFor("/api/public/challenge/initiate"), "application/json", bytes.NewBuffer(body))
-	if err := errors.Join(err, err2); err != nil {
+	if err != nil {
+		return initiateResp, err
+	}
+	respBody, err := http.Post(gm.RouteFor("/api/public/challenge/initiate"), "application/json", bytes.NewBuffer(body))
+	if err != nil {
 		return initiateResp, err
 	}
 

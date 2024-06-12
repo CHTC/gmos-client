@@ -15,8 +15,7 @@ type GlideinManagerClient struct {
 	ManagerUrl string
 
 	// The active authentication token for the client
-	// TODO we might not want to store this in memory
-	Credentials string
+	Credentials GlideinManagerCredentials
 
 	// The base directory into which to clone repositories
 	WorkDir string

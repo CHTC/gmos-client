@@ -5,6 +5,4 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN  go mod download
 COPY client ./client
-COPY main   ./main
-RUN go build -o sample-client ./main
-CMD  ["./sample-client"]
+COPY test   ./test
