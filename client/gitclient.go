@@ -3,10 +3,11 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -31,7 +32,7 @@ func (gm *GlideinManagerClient) RepoStatus() (RepoState, error) {
 	var listing RepoState
 	resp, err := http.Get(gm.RouteFor("/api/public/repo-status"))
 	if err != nil {
-		return RepoState{}, err
+		return RepoState{}, errors.Wrap(err, "failed to submit repo-status request")
 	}
 	defer resp.Body.Close()
 
@@ -46,18 +47,18 @@ func (gm *GlideinManagerClient) ReportGitUsage(hash string) error {
 	client := &http.Client{}
 	usageStr, err := json.Marshal(usage)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to marshal log-repo-access request body")
 	}
 	req, err := http.NewRequest("POST", gm.RouteFor("/api/private/log-repo-access"), bytes.NewBuffer(usageStr))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create log-repo-access request")
 	}
 
 	req.SetBasicAuth(gm.HostName, gm.Credentials.Capability)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil
+		return errors.Wrap(err, "failed to submit log-repo-access request")
 	}
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("report git usage returned status %v", resp.StatusCode)
@@ -75,18 +76,18 @@ func (gm *GlideinManagerClient) cloneRepo(repoInfo RepoState) error {
 			Password: gm.Credentials.Capability,
 		},
 	})
-	return err
+	return errors.Wrap(err, "failed to clone repo")
 }
 
 func getCurrentCommit(repoDir string) (string, error) {
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to get git repo for directory %v", repoDir)
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to get HEAD of git repo %v", repoDir)
 	}
 	return head.Hash().String(), nil
 }
@@ -98,11 +99,11 @@ func (gm *GlideinManagerClient) resetToCommit(repoInfo RepoState) error {
 	repo, err := git.PlainOpen(cloneDir)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get git repo for directory %v", cloneDir)
 	}
 	worktree, err := repo.Worktree()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get work tree for git repo %v", cloneDir)
 	}
 
 	// git fetch
@@ -113,7 +114,7 @@ func (gm *GlideinManagerClient) resetToCommit(repoInfo RepoState) error {
 			Password: gm.Credentials.Capability,
 		},
 	}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
+		return errors.Wrapf(err, "failed to fetch repo %v", cloneDir)
 	}
 
 	// git reset --hard <commit>
@@ -145,7 +146,7 @@ func (gm *GlideinManagerClient) SyncRepo() (RepoUpdate, error) {
 	_, statErr := os.Stat(repoDir)
 	isNewRepo := os.IsNotExist(statErr)
 	if statErr != nil && !isNewRepo {
-		return repoUpdate, statErr
+		return repoUpdate, errors.Wrapf(statErr, "failed to stat directory %v", repoDir)
 	}
 	if isNewRepo {
 		if err := gm.cloneRepo(repoInfo); err != nil {

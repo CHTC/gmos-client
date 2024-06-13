@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Perform a mutual authentication handshake with the Glidein Manager.
@@ -69,11 +70,11 @@ func (gm *GlideinManagerClient) initiateHandshake(listenerPort int) (ChallengeIn
 
 	body, err := json.Marshal(initiateReq)
 	if err != nil {
-		return initiateResp, err
+		return initiateResp, errors.Wrap(err, "failed to construct challenge/initiate request body")
 	}
 	respBody, err := http.Post(gm.RouteFor("/api/public/challenge/initiate"), "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return initiateResp, err
+		return initiateResp, errors.Wrap(err, "failed to submit challenge/initiate request")
 	}
 
 	return initiateResp, UnmarshalBody(respBody.Body, &initiateResp)
@@ -84,14 +85,14 @@ func (gm *GlideinManagerClient) validateCapability(capability string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", gm.RouteFor("/api/private/verify-auth"), nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to construct verify-auth request")
 	}
 
 	req.SetBasicAuth(gm.HostName, capability)
 
-	resp, err2 := client.Do(req)
-	if err2 != nil {
-		return err2
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to submit verify-auth request")
 	}
 
 	if resp.StatusCode != 200 {
@@ -127,7 +128,7 @@ func (hs *HandshakeCallbackHandler) callbackError(w http.ResponseWriter, err err
 func (hs *HandshakeCallbackHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	var req ChallengeCompleteRequest
 	if err := UnmarshalBody(r.Body, &req); err != nil {
-		hs.callbackError(w, err, http.StatusBadRequest)
+		hs.callbackError(w, errors.Wrap(err, "failed to unmarshal callback request body"), http.StatusBadRequest)
 		return
 	}
 
@@ -142,7 +143,7 @@ func (hs *HandshakeCallbackHandler) handleCallback(w http.ResponseWriter, r *htt
 	}
 
 	if err := json.NewEncoder(w).Encode(ChallengeCompleteResponse{ChallengeSecret: challenge.ChallengeSecret}); err != nil {
-		hs.callbackError(w, err, http.StatusInternalServerError)
+		hs.callbackError(w, errors.Wrap(err, "failed to construct callback response body"), http.StatusInternalServerError)
 		return
 	}
 	// TODO this is hacky, need to ensure response processing completes on Glidein Manager side
@@ -160,7 +161,7 @@ func (hs *HandshakeCallbackHandler) exchangeChallenge(challenge ChallengeInitiat
 	case cap := <-hs.capabilityChannel:
 		return cap.capability, cap.err
 	case <-time.After(timeout):
-		return "", errors.New("")
+		return "", errors.New("timeout waiting for callback from server")
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // Unmarshal the body of a request or response if
@@ -11,9 +13,9 @@ import (
 func UnmarshalBody[T any](bodyIo io.ReadCloser, s *T) error {
 	body, err := io.ReadAll(bodyIo)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read response body")
 	}
-	return json.Unmarshal(body, s)
+	return errors.Wrap(json.Unmarshal(body, s), "failed to unmarshal response body")
 }
 
 // Return the given request path concatenated to the top level domain
