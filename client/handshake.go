@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,6 +24,7 @@ type HandshakeCallbackHandler struct {
 	challengeChannel  chan ChallengeInitiateResponse
 	capabilityChannel chan CapabilityResult
 	server            *http.Server
+	mu                sync.Mutex
 }
 
 var hs HandshakeCallbackHandler = HandshakeCallbackHandler{}
@@ -45,6 +47,9 @@ var hs HandshakeCallbackHandler = HandshakeCallbackHandler{}
 // To support handling the callback from the Glidein Manager in step (2), the client must start
 // a temporary webserver that listens on the given exposed listenerPort.
 func (gm *GlideinManagerClient) DoHandshake(listenerPort int) error {
+	// Each handshake requires exclusive control over the temporary webserver
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
 
 	// 0. Start a temporary server to listen for a callback from the Glidein Manager
 	hs.startCallbackListener(fmt.Sprintf("0.0.0.0:%v", listenerPort))
