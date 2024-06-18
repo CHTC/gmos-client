@@ -1,6 +1,6 @@
 module github.com/chtc/gmos-client
 
-go 1.22.4
+go 1.21
 
 require (
 	github.com/go-git/go-git/v5 v5.12.0

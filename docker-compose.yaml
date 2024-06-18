@@ -1,0 +1,33 @@
+volumes:
+  gmfs-data-vol:
+  gmfs-git-vol:
+services:
+  # Main Service
+  gm-file-server:
+    image: hub.opensciencegrid.org/mwestphall/glidein-manager-file-server
+    environment:
+      - REPO_URL=git@github.com:mwestphall/glidein-manager-test-upstream.git
+      - SSH_KEY=/mnt/ssh/id_rsa
+      - API_PREFIX=/api
+    volumes:
+      - ./volumes/ssh/:/mnt/ssh:ro
+      - ./volumes/config/:/etc/gm-file-server/config:ro
+      - gmfs-git-vol:/var/lib/git
+      - gmfs-data-vol:/etc/gm-file-server/data
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: "curl --fail http://localhost:80/api/public || exit 1"
+      interval: 10s
+      timeout: 5s 
+      retries: 5
+      start_period: 0s
+
+  test-client:
+    image: glidein-manager-client
+    build: .
+    depends_on:
+      gm-file-server:
+        condition: service_healthy
+    entrypoint: ['go','test','./test']
+
