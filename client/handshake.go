@@ -12,6 +12,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+type CapabilityResult struct {
+	capability string
+	err        error
+}
+
+// Helper struct that creates a temporary server that listens for the Glidein Manager's callback
+// in step (2)
+type HandshakeCallbackHandler struct {
+	challengeChannel  chan ChallengeInitiateResponse
+	capabilityChannel chan CapabilityResult
+	server            *http.Server
+}
+
+var hs HandshakeCallbackHandler = HandshakeCallbackHandler{}
+
 // Perform a mutual authentication handshake with the Glidein Manager.
 // The authentication occurs across a set of 3 request/response pairs:
 //
@@ -31,7 +46,6 @@ import (
 // a temporary webserver that listens on the given exposed listenerPort.
 func (gm *GlideinManagerClient) DoHandshake(listenerPort int) error {
 
-	hs := HandshakeCallbackHandler{}
 	// 0. Start a temporary server to listen for a callback from the Glidein Manager
 	hs.startCallbackListener(fmt.Sprintf("0.0.0.0:%v", listenerPort))
 	defer hs.stopCallbackListener(context.TODO())
@@ -102,19 +116,6 @@ func (gm *GlideinManagerClient) validateCapability(capability string) error {
 	return nil
 }
 
-type CapabilityResult struct {
-	capability string
-	err        error
-}
-
-// Helper struct that creates a temporary server that listens for the Glidein Manager's callback
-// in step (2)
-type HandshakeCallbackHandler struct {
-	challengeChannel  chan ChallengeInitiateResponse
-	capabilityChannel chan CapabilityResult
-	server            *http.Server
-}
-
 // helper function to write an error message to both the http response writer and
 // capability output channel
 func (hs *HandshakeCallbackHandler) callbackError(w http.ResponseWriter, err error, status int) {
@@ -175,12 +176,14 @@ func (hs *HandshakeCallbackHandler) exchangeChallenge(challenge ChallengeInitiat
 func (hs *HandshakeCallbackHandler) startCallbackListener(addr string) {
 	hs.challengeChannel = make(chan ChallengeInitiateResponse)
 	hs.capabilityChannel = make(chan CapabilityResult)
-	hs.server = &http.Server{Addr: addr}
-
-	// Setup a handler for the response sent by the gm-object-server
-	http.HandleFunc("/challenge/response", hs.handleCallback)
+	if hs.server == nil {
+		// Setup a handler for the response sent by the gm-object-server
+		// This sets some global state in http that is not idempotent and cannot be easily reversed
+		http.HandleFunc("/challenge/response", hs.handleCallback)
+	}
 
 	// Start a server in a separate goroutine, defer its shutdown to the end of this call
+	hs.server = &http.Server{Addr: addr}
 	go func() {
 		if err := hs.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("Unexpected Server Error: %v\n", err)

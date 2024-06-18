@@ -15,10 +15,13 @@ func TestEndToEnd(t *testing.T) {
 		HostName:   "test-client",
 		WorkDir:    ".",
 	}
-	if err := cl.DoHandshake(8080); err != nil {
-		t.Fatalf("Handshake failed: %v", err)
+	// Ensure handshake is idempotent
+	for i := 0; i < 2; i++ {
+		if err := cl.DoHandshake(8080); err != nil {
+			t.Fatalf("Handshake failed: %v", err)
+		}
+		fmt.Printf("%+v\n", cl.Credentials)
 	}
-	fmt.Printf("%+v\n", cl.Credentials)
 
 	// Ensure SyncRepo is idempotent
 	update, err := cl.SyncRepo()
