@@ -156,7 +156,12 @@ func (hs *HandshakeCallbackHandler) handleCallback(w http.ResponseWriter, r *htt
 
 // Write a value to the callback handler's input channel, then read a value from its output channel
 func (hs *HandshakeCallbackHandler) exchangeChallenge(challenge ChallengeInitiateResponse, timeout time.Duration) (string, error) {
-	hs.challengeChannel <- challenge
+	select {
+	case hs.challengeChannel <- challenge:
+		// no-op
+	case <-time.After(timeout):
+		return "", errors.New("timeout writing to response handler goroutine")
+	}
 	select {
 	case cap := <-hs.capabilityChannel:
 		return cap.capability, cap.err
