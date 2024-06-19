@@ -53,7 +53,7 @@ func (gm *GlideinManagerClient) DoHandshake(listenerPort int) error {
 
 	// 0. Start a temporary server to listen for a callback from the Glidein Manager
 	hs.startCallbackListener(fmt.Sprintf("0.0.0.0:%v", listenerPort))
-	// defer hs.stopCallbackListener(context.TODO())
+	defer hs.stopCallbackListener(context.TODO())
 
 	// 1. Submit a request to initiate the handshake
 	challenge, err := gm.initiateHandshake(listenerPort)
@@ -91,6 +91,8 @@ func (gm *GlideinManagerClient) initiateHandshake(listenerPort int) (ChallengeIn
 	if err != nil {
 		return initiateResp, errors.Wrap(err, "failed to construct challenge/initiate request body")
 	}
+	fmt.Printf("%+v\n", initiateReq)
+
 	respBody, err := http.Post(gm.RouteFor("/api/public/challenge/initiate"), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return initiateResp, errors.Wrap(err, "failed to submit challenge/initiate request")
@@ -181,13 +183,12 @@ func (hs *HandshakeCallbackHandler) exchangeChallenge(challenge ChallengeInitiat
 func (hs *HandshakeCallbackHandler) startCallbackListener(addr string) {
 	hs.challengeChannel = make(chan ChallengeInitiateResponse)
 	hs.capabilityChannel = make(chan CapabilityResult)
-	if hs.server != nil {
-		return
+	if hs.server == nil {
+		// Setup a handler for the response sent by the gm-object-server
+		// This sets some global state in http that is not idempotent and cannot be easily reversed
+		http.HandleFunc("/challenge/response", hs.handleCallback)
 	}
 
-	// Setup a handler for the response sent by the gm-object-server
-	// This sets some global state in http that is not idempotent and cannot be easily reversed
-	http.HandleFunc("/challenge/response", hs.handleCallback)
 	// Start a server in a separate goroutine, defer its shutdown to the end of this call
 	hs.server = &http.Server{Addr: addr}
 

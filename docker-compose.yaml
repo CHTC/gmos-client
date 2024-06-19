@@ -25,9 +25,15 @@ services:
 
   test-client:
     image: glidein-manager-client
+    profiles: ['test']
     build: .
     depends_on:
       gm-file-server:
         condition: service_healthy
     entrypoint: ['go','test','./test']
 
+  test-client-concurrent:
+    image: glidein-manager-client
+    build: .
+    profiles: ['concurrent']
+    entrypoint: ['go','test','-v', '-run', 'TestSimultaneousStartup', './test']
