@@ -17,6 +17,7 @@ import (
 type RepoUpdate struct {
 	PreviousCommit string
 	CurrentCommit  string
+	Contents       []os.DirEntry
 }
 
 func (ru *RepoUpdate) Created() bool {
@@ -161,6 +162,13 @@ func (gm *GlideinManagerClient) SyncRepo() (RepoUpdate, error) {
 
 	// hard reset the local copy to the commit specified by the Glidein Manger
 	if err := gm.resetToCommit(repoInfo); err != nil {
+		return repoUpdate, err
+	}
+
+	// return the contents of the directory
+	if listing, err := os.ReadDir(repoDir); err == nil {
+		repoUpdate.Contents = listing
+	} else {
 		return repoUpdate, err
 	}
 
