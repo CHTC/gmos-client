@@ -17,7 +17,7 @@ import (
 type RepoUpdate struct {
 	PreviousCommit string
 	CurrentCommit  string
-	Contents       []os.DirEntry
+	Path           string
 }
 
 func (ru *RepoUpdate) Created() bool {
@@ -143,18 +143,18 @@ func (gm *GlideinManagerClient) SyncRepo() (RepoUpdate, error) {
 	repoUpdate.CurrentCommit = repoInfo.CommitHash
 
 	// Clone the repo if it doesn't exist locally
-	repoDir := fmt.Sprintf("%v/%v", gm.WorkDir, repoInfo.Name)
-	_, statErr := os.Stat(repoDir)
+	repoUpdate.Path = fmt.Sprintf("%v/%v", gm.WorkDir, repoInfo.Name)
+	_, statErr := os.Stat(repoUpdate.Path)
 	isNewRepo := os.IsNotExist(statErr)
 	if statErr != nil && !isNewRepo {
-		return repoUpdate, errors.Wrapf(statErr, "failed to stat directory %v", repoDir)
+		return repoUpdate, errors.Wrapf(statErr, "failed to stat directory %v", repoUpdate.Path)
 	}
 	if isNewRepo {
 		if err := gm.cloneRepo(repoInfo); err != nil {
 			return repoUpdate, err
 		}
 	} else {
-		repoUpdate.PreviousCommit, err = getCurrentCommit(repoDir)
+		repoUpdate.PreviousCommit, err = getCurrentCommit(repoUpdate.Path)
 		if err != nil {
 			return repoUpdate, err
 		}
@@ -162,13 +162,6 @@ func (gm *GlideinManagerClient) SyncRepo() (RepoUpdate, error) {
 
 	// hard reset the local copy to the commit specified by the Glidein Manger
 	if err := gm.resetToCommit(repoInfo); err != nil {
-		return repoUpdate, err
-	}
-
-	// return the contents of the directory
-	if listing, err := os.ReadDir(repoDir); err == nil {
-		repoUpdate.Contents = listing
-	} else {
 		return repoUpdate, err
 	}
 
