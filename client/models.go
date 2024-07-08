@@ -42,3 +42,15 @@ type ClientStatus struct {
 	AuthState  ClientAuthState    `json:"auth_state"`
 	RepoAccess ClientAccessStatus `json:"repo_access"`
 }
+
+type SecretSource struct {
+	Name    string `json:"secret_name"`
+	Version string `json:"secret_version"`
+	Source  string `json:"secret_source"`
+}
+
+type SecretValue struct {
+	Name    string `json:"secret_name"`
+	Version string `json:"secret_version"`
+	Value   string `json:"secret_value"`
+}
